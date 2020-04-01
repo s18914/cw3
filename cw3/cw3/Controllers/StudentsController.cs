@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
 using Cw3.DAL;
@@ -14,6 +15,7 @@ namespace Cw3.Controllers
     public class StudentsController : ControllerBase
     {
         private readonly IDbService _dbService;
+        private const String ConString = "Data Source=db-mssql;Initial Catalog=s18914;Integrated Security=True";
 
         public StudentsController(IDbService dbService)
         {
@@ -22,24 +24,61 @@ namespace Cw3.Controllers
 
 
         [HttpGet]
-        public IActionResult getStudent(string orderBy)
+        public IActionResult getStudents()
         {
-            return Ok(_dbService.GetStudents());
+            var list = new List<Student>();
+            using (SqlConnection con = new SqlConnection(ConString))
+            using (SqlCommand com = new SqlCommand())
+            {
+                com.Connection = con;
+                com.CommandText = "select FirstName,LastName,BirthDate,name,Semester from student inner join Enrollment on Student.IdEnrollment=Enrollment.IdEnrollment inner join Studies on Studies.IdStudy=Enrollment.IdStudy";
+
+                con.Open();
+                SqlDataReader dr = com.ExecuteReader();
+                while (dr.Read())
+                {
+                    var st = new Student();
+                    st.FirstName = dr["FirstName"].ToString();
+                    st.LastName = dr["LastName"].ToString();
+                    st.BirthDate = dr["BirthDate"].ToString();
+                    st.Name = dr["Name"].ToString();
+                    st.Semester = int.Parse(dr["Semester"].ToString());
+                    list.Add(st);
+                }
+
+            }
+
+            return Ok(list);
         }
 
-        [HttpGet("{id}")]
-        public IActionResult getStudents(int id)
+
+        [HttpGet("{IndexNumber}")]
+        public IActionResult GetStudent(string indexNumber)
         {
-            if (id == 1)
+            using (SqlConnection con = new SqlConnection(ConString))
+            using (SqlCommand com = new SqlCommand())
             {
-                return Ok("Kowalski");
+                com.Connection = con;
+                com.CommandText = "select * from student inner join Enrollment on Student.IdEnrollment=Enrollment.IdEnrollment where indexnumber='" + indexNumber+"'";
+
+                con.Open();
+                var dr = com.ExecuteReader();
+                if (dr.Read())
+                {
+                    var st = new Student();
+                    st.IndexNumber = dr["IndexNumber"].ToString();
+                    st.IdEnrollment = int.Parse(dr["IdEnrollment"].ToString());
+                    st.Semester = int.Parse(dr["Semester"].ToString());
+                    st.IdStudy = int.Parse(dr["IdStudy"].ToString());
+                    st.StartDate = dr["StartDate"].ToString();
+                    return Ok(st);
+                }
+
             }
-            else if (id == 2)
-            {
-                return Ok("Malewski");
-            }
-            return NotFound("Nie znaleziono studenta");
+
+                return NotFound();
         }
+
 
         [HttpPost]
         public IActionResult CreateStudent(Student student)
