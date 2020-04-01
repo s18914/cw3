@@ -58,8 +58,11 @@ namespace Cw3.Controllers
             using (SqlConnection con = new SqlConnection(ConString))
             using (SqlCommand com = new SqlCommand())
             {
+                
                 com.Connection = con;
-                com.CommandText = "select * from student inner join Enrollment on Student.IdEnrollment=Enrollment.IdEnrollment where indexnumber='" + indexNumber+"'";
+                com.CommandText = "select * from student inner join Enrollment on Student.IdEnrollment=Enrollment.IdEnrollment where indexnumber=@index";
+
+                com.Parameters.AddWithValue("index", indexNumber);
 
                 con.Open();
                 var dr = com.ExecuteReader();
